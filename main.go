@@ -20,7 +20,7 @@ const VERSION = "0.1"
 
 var (
 	title = flag.String("title", "Picoblog", "Title for blog")
-	web   = flag.Bool("web", false, "Display feed in browser")
+	list  = flag.String("list", "", "List of blog posts, sorted by display order")
 
 	postTemplate = template.Must(template.New("post").Parse(
 		`
@@ -66,8 +66,7 @@ func init() {
 
   Examples:
 	picoblog first.md second.md
-	picoblog post_directory --web
-	picoblog pist_directory other_post_directory --html
+	picoblog --list file.md
 
   Flags:
 `)
@@ -80,23 +79,40 @@ func init() {
 func main() {
 	flag.Parse()
 
-	postNames := flag.Args()
+	args := flag.Args()
+	if len(args) > 0 && args[0] == "version" {
+		fmt.Fprintf(os.Stderr, "%s\n", VERSION)
+		return
+	}
+
+	var postNames []string
+	if *list != "" {
+		lis, err := os.Open(*list)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error opening post list: %+v", err)
+		}
+
+		s := bufio.NewScanner(lis)
+		for s.Scan() {
+			postNames = append(postNames, s.Text())
+		}
+	} else {
+		postNames = args
+	}
+
 	if len(postNames) == 0 {
 		fmt.Fprintf(os.Stderr, "ERROR: No post provided\n\n")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	if postNames[0] == "version" {
-		fmt.Fprintf(os.Stderr, "%s\n", VERSION)
-		return
-	}
-
 	posts := getPosts(postNames)
 
-	sort.SliceStable(posts, func(i, j int) bool {
-		return posts[i].Timestamp.After(posts[j].Timestamp)
-	})
+	if *list == "" {
+		sort.SliceStable(posts, func(i, j int) bool {
+			return posts[i].Timestamp.After(posts[j].Timestamp)
+		})
+	}
 
 	renderHtml(os.Stdout, posts)
 }
@@ -169,5 +185,5 @@ func renderHtml(w io.Writer, posts []*post) {
 		fmt.Fprintf(os.Stderr, "rendering post %s\n", p.Title)
 		p.Render(w)
 	}
-  fmt.Fprintf(w, "</body>")
+	fmt.Fprintf(w, "</body>")
 }
