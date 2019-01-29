@@ -24,10 +24,14 @@ var (
 
 	postTemplate = template.Must(template.New("post").Parse(
 		`
-<h3 id="{{ .Title }}">{{ .Title }}</h3>
-<b>{{ .Timestamp.Format "January 2nd, 2006" }}</b>
+<hr style="margin: 2em 0" />
+<div>
+<div style="text-align: right">
+  <h3 id="{{ .Title }}" style="margin-bottom: .5em">{{ .Title }}</h3>
+  <b>{{ .Timestamp.Format "January 2nd, 2006" }}</b>
+</div>
 {{ .Contents }}
-<hr \>
+</div>
 `))
 
 	blogTemplate = template.Must(template.New("blog").Parse(
@@ -94,7 +98,7 @@ func main() {
 		return posts[i].Timestamp.After(posts[j].Timestamp)
 	})
 
-	renderHtml(bufio.NewWriter(os.Stdout), posts)
+	renderHtml(os.Stdout, posts)
 }
 
 type post struct {
@@ -105,11 +109,15 @@ type post struct {
 
 func (p *post) Render(w io.Writer) {
 	htmlContents := blackfriday.Run([]byte(p.Contents))
-	postTemplate.Execute(w, post{
+	err := postTemplate.Execute(w, post{
 		p.Title,
 		p.Timestamp,
 		string(htmlContents),
 	})
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error rendering post %s\n: %+v", p.Title, err)
+	}
 }
 
 func getPosts(filenames []string) (posts []*post) {
@@ -158,6 +166,8 @@ func renderHtml(w io.Writer, posts []*post) {
 	})
 
 	for _, p := range posts {
+		fmt.Fprintf(os.Stderr, "rendering post %s\n", p.Title)
 		p.Render(w)
 	}
+  fmt.Fprintf(w, "</body>")
 }
