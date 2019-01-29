@@ -6,6 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
+	"sort"
+	"strings"
 	"text/template"
 	"time"
 
@@ -21,9 +24,10 @@ var (
 
 	postTemplate = template.Must(template.New("post").Parse(
 		`
-<h1 id="{{ .Title }}">{{ .Title }}</h1>
+<h3 id="{{ .Title }}">{{ .Title }}</h3>
 <b>{{ .Timestamp.Format "January 2nd, 2006" }}</b>
 {{ .Contents }}
+<hr \>
 `))
 
 	blogTemplate = template.Must(template.New("blog").Parse(
@@ -86,6 +90,10 @@ func main() {
 
 	posts := getPosts(postNames)
 
+	sort.SliceStable(posts, func(i, j int) bool {
+		return posts[i].Timestamp.After(posts[j].Timestamp)
+	})
+
 	renderHtml(bufio.NewWriter(os.Stdout), posts)
 }
 
@@ -122,8 +130,10 @@ func getPost(filename string) (*post, error) {
 		return nil, fmt.Errorf("failed to stat file %q: %v", filename, err)
 	}
 
+	name := strings.TrimRight(info.Name(), path.Ext(info.Name()))
+
 	p := &post{
-		Title:     info.Name(),
+		Title:     name,
 		Timestamp: info.ModTime(),
 	}
 
@@ -143,6 +153,10 @@ func getPost(filename string) (*post, error) {
 }
 
 func renderHtml(w io.Writer, posts []*post) {
+	blogTemplate.Execute(w, struct{ Title string }{
+		*title,
+	})
+
 	for _, p := range posts {
 		p.Render(w)
 	}
