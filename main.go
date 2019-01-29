@@ -66,7 +66,7 @@ func init() {
 
   Examples:
 	picoblog first.md second.md
-	picoblog --list file.md
+	picoblog --list file.txt
 
   Flags:
 `)

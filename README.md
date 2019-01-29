@@ -5,7 +5,7 @@ Picoblog is a minimal static blog creator. It's heavily inspired by
 It looks nice, it's dead simple to use, and it gets out of your way. What's not
 to like, dude.
 
-Things you don't need with picoblogi (or picofeed):
+Things you don't need with picoblog (or picofeed):
 
 - An account
 - A subscription
@@ -16,13 +16,19 @@ Honestly it's like a fancy markdown compiler.
 ```
   Examples:
 	picoblog first.md second.md
-	picoblog --list file.md
+	picoblog --list file.txt
 ```
 
 ```sh
 # Use whatever click to open your terminal supports, like cmd+double click in OSX's Terminal.app
 ./picooblog blog-posts.txt
 ```
+
+<p align="center">
+      <img alt="picofeed local browser rss" src="https://i.imgur.com/2HQcHYF.jpg"/>
+</p>
+
+
 
 #### Install
 
@@ -33,4 +39,4 @@ Or there are precompiled binaries in the [releases page](https://github.com/isaa
 
 #### Other
 
-Picofeed is built on top of [gofeed]("github.com/russross/blackfriday/v2")
+Picoblog is built on top of [blackfriday](https://github.com/russross/blackfriday)
