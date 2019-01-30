@@ -23,15 +23,7 @@ var (
 	list  = flag.String("list", "", "List of blog posts, sorted by display order")
 
 	postTemplate = template.Must(template.New("post").Parse(
-		`
-<hr style="margin: 2em 0" />
-<div>
-<div style="text-align: right">
-  <h3 id="{{ .Title }}" style="margin-bottom: .5em">{{ .Title }}</h3>
-  <b>{{ .Timestamp.Format "January 2nd, 2006" }}</b>
-</div>
-{{ .Contents }}
-</div>
+	`
 `))
 
 	blogTemplate = template.Must(template.New("blog").Parse(
@@ -56,6 +48,17 @@ a:visited {color: #888;}
 </head>
 <body>
 <h4 style="padding-bottom: 2em">{{ .Title }}</h4>
+{{ range .Posts }}
+  <hr style="margin: 2em 0" />
+  <div>
+  <div style="text-align: right">
+    <h3 id="{{ .Title }}" style="margin-bottom: .5em">{{ .Title }}</h3>
+    <b>Updated {{ .Timestamp.Format "January 2nd, 2006" }}</b>
+  </div>
+  {{ .HTML }}
+  </div>
+{{ end }}
+</body>
 `))
 )
 
@@ -123,17 +126,9 @@ type post struct {
 	Contents  string
 }
 
-func (p *post) Render(w io.Writer) {
+func (p *post) HTML() string {
 	htmlContents := blackfriday.Run([]byte(p.Contents))
-	err := postTemplate.Execute(w, post{
-		p.Title,
-		p.Timestamp,
-		string(htmlContents),
-	})
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error rendering post %s\n: %+v", p.Title, err)
-	}
+  return string(htmlContents)
 }
 
 func getPosts(filenames []string) (posts []*post) {
@@ -177,13 +172,11 @@ func getPost(filename string) (*post, error) {
 }
 
 func renderHtml(w io.Writer, posts []*post) {
-	blogTemplate.Execute(w, struct{ Title string }{
+	blogTemplate.Execute(w, struct{
+    Title string
+    Posts []*post
+  }{
 		*title,
+    posts,
 	})
-
-	for _, p := range posts {
-		fmt.Fprintf(os.Stderr, "rendering post %s\n", p.Title)
-		p.Render(w)
-	}
-	fmt.Fprintf(w, "</body>")
 }
