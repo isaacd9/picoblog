@@ -23,7 +23,7 @@ var (
 	list  = flag.String("list", "", "List of blog posts, sorted by display order")
 
 	postTemplate = template.Must(template.New("post").Parse(
-	`
+		`
 `))
 
 	blogTemplate = template.Must(template.New("blog").Parse(
@@ -128,7 +128,7 @@ type post struct {
 
 func (p *post) HTML() string {
 	htmlContents := blackfriday.Run([]byte(p.Contents))
-  return string(htmlContents)
+	return string(htmlContents)
 }
 
 func getPosts(filenames []string) (posts []*post) {
@@ -172,11 +172,11 @@ func getPost(filename string) (*post, error) {
 }
 
 func renderHtml(w io.Writer, posts []*post) {
-	blogTemplate.Execute(w, struct{
-    Title string
-    Posts []*post
-  }{
+	blogTemplate.Execute(w, struct {
+		Title string
+		Posts []*post
+	}{
 		*title,
-    posts,
+		posts,
 	})
 }
