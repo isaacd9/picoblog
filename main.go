@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"sort"
@@ -12,19 +13,26 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/gorilla/feeds"
 	"github.com/russross/blackfriday/v2"
 	flag "github.com/spf13/pflag"
 )
 
 const VERSION = "0.1"
 
+type outputType string
+
+const (
+	HTML outputType = "html"
+	RSS  outputType = "rss"
+	ATOM outputType = "atom"
+)
+
 var (
 	title = flag.String("title", "Picoblog", "Title for blog")
 	list  = flag.String("list", "", "List of blog posts, sorted by display order")
-
-	postTemplate = template.Must(template.New("post").Parse(
-		`
-`))
+	mode  = flag.String("mode", "html", "Render in HTML or RSS mode. If RSS mode is set, the \"url\" flag must also be.")
+	link  = flag.String("url", "", "URL to this blog to use in RSS feed")
 
 	blogTemplate = template.Must(template.New("blog").Parse(
 		`
@@ -92,7 +100,7 @@ func main() {
 	if *list != "" {
 		lis, err := os.Open(*list)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error opening post list: %+v", err)
+			fmt.Fprintf(os.Stderr, "error opening post list: %+v\n", err)
 		}
 
 		s := bufio.NewScanner(lis)
@@ -117,7 +125,25 @@ func main() {
 		})
 	}
 
-	renderHtml(os.Stdout, posts)
+	mode := strings.ToLower(*mode)
+	switch outputType(mode) {
+	case HTML:
+		renderHTML(os.Stdout, posts)
+	case RSS:
+		if *link == "" {
+			fmt.Fprintf(os.Stderr, "ERROR: URL must be specified in RSS mode\n\n")
+			os.Exit(1)
+		}
+		renderFeed(os.Stdout, posts, *link, RSS)
+	case ATOM:
+		if *link == "" {
+			fmt.Fprintf(os.Stderr, "ERROR: URL must be specified in Atom mode\n\n")
+			os.Exit(1)
+		}
+		renderFeed(os.Stdout, posts, *link, ATOM)
+	default:
+		fmt.Fprintf(os.Stderr, "ERROR: Unsupported mode %q\n\n", mode)
+	}
 }
 
 type post struct {
@@ -129,6 +155,15 @@ type post struct {
 func (p *post) HTML() string {
 	htmlContents := blackfriday.Run([]byte(p.Contents))
 	return string(htmlContents)
+}
+
+func (p *post) FeedItem(baseURL string) *feeds.Item {
+	return &feeds.Item{
+		Title: p.Title,
+		Link: &feeds.Link{
+			Href: fmt.Sprintf("%s#%s", baseURL, url.PathEscape(p.Title)),
+		},
+	}
 }
 
 func getPosts(filenames []string) (posts []*post) {
@@ -171,7 +206,7 @@ func getPost(filename string) (*post, error) {
 	return p, nil
 }
 
-func renderHtml(w io.Writer, posts []*post) {
+func renderHTML(w io.Writer, posts []*post) {
 	blogTemplate.Execute(w, struct {
 		Title string
 		Posts []*post
@@ -179,4 +214,28 @@ func renderHtml(w io.Writer, posts []*post) {
 		*title,
 		posts,
 	})
+}
+
+func renderFeed(w io.Writer, posts []*post, baseURL string, t outputType) {
+	feed := &feeds.Feed{
+		Title: *title,
+		Link:  &feeds.Link{Href: baseURL},
+		Items: []*feeds.Item{},
+	}
+
+	for _, post := range posts {
+		feed.Items = append(feed.Items, post.FeedItem(baseURL))
+	}
+
+	var xmlFeed feeds.XmlFeed
+	switch t {
+	case RSS:
+		xmlFeed = (&feeds.Rss{Feed: feed}).RssFeed()
+	case ATOM:
+		xmlFeed = (&feeds.Atom{Feed: feed}).AtomFeed()
+	}
+
+	if err := feeds.WriteXML(xmlFeed, w); err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: Could not render feed %v\n\n", err)
+	}
 }
