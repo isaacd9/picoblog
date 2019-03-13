@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -117,12 +116,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	posts := getPosts(postNames)
+	postFiles := getPosts(postNames)
 
-	if *list == "" {
-		sort.SliceStable(posts, func(i, j int) bool {
-			return posts[i].Timestamp.After(posts[j].Timestamp)
-		})
+	posts := make([]*post, 0, len(postFiles))
+	for _, postName := range postNames {
+		posts = append(posts, postFiles[postName])
 	}
 
 	mode := strings.ToLower(*mode)
@@ -166,14 +164,15 @@ func (p *post) FeedItem(baseURL string) *feeds.Item {
 	}
 }
 
-func getPosts(filenames []string) (posts []*post) {
+func getPosts(filenames []string) (posts map[string]*post) {
+	posts = map[string]*post{}
 	for _, filename := range filenames {
 		post, err := getPost(filename)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error building post: %v", err)
 		}
 
-		posts = append(posts, post)
+		posts[filename] = post
 	}
 	return posts
 }
