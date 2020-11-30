@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -215,8 +216,10 @@ func getPosts(postRefs []postRef) (posts map[postRef]*post) {
 
 func getPost(pr postRef) (*post, error) {
 	filename := pr.name
+
+	name := strings.TrimRight(filepath.Base(filename), path.Ext(filename))
 	p := &post{
-		Title:     filename,
+		Title:     name,
 		Timestamp: pr.date,
 	}
 
