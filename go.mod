@@ -8,3 +8,5 @@ require (
 	github.com/spf13/pflag v1.0.3
 	golang.org/x/tools v0.0.0-20190201231825-51e363b66d25 // indirect
 )
+
+go 1.13

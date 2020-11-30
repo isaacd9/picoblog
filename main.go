@@ -86,6 +86,11 @@ func init() {
 	flag.ErrHelp = fmt.Errorf("")
 }
 
+type postRef struct {
+	name string
+	date time.Time
+}
+
 func main() {
 	flag.Parse()
 
@@ -95,19 +100,50 @@ func main() {
 		return
 	}
 
-	var postNames []string
+	var postNames []postRef
 	if *list != "" {
 		lis, err := os.Open(*list)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error opening post list: %+v\n", err)
+			os.Exit(1)
 		}
 
 		s := bufio.NewScanner(lis)
 		for s.Scan() {
-			postNames = append(postNames, s.Text())
+			line := s.Text()
+			split := strings.Split(line, ",")
+
+			var t time.Time
+			if len(split) > 1 {
+				tt := strings.TrimSpace(split[1])
+				t, err = time.Parse("2006-01-02", tt)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error parsing time %q: %+v\n", tt, err)
+					os.Exit(1)
+				}
+			}
+
+			postNames = append(postNames, postRef{
+				name: strings.TrimSpace(split[0]),
+				date: t,
+			})
 		}
 	} else {
-		postNames = args
+		for _, a := range args {
+			info, err := os.Stat(a)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to stat file %q: %v", a, err)
+				os.Exit(1)
+			}
+
+			name := strings.TrimRight(info.Name(), path.Ext(info.Name()))
+			info.ModTime()
+
+			postNames = append(postNames, postRef{
+				name: name,
+				date: info.ModTime(),
+			})
+		}
 	}
 
 	if len(postNames) == 0 {
@@ -164,30 +200,24 @@ func (p *post) FeedItem(baseURL string) *feeds.Item {
 	}
 }
 
-func getPosts(filenames []string) (posts map[string]*post) {
-	posts = map[string]*post{}
-	for _, filename := range filenames {
-		post, err := getPost(filename)
+func getPosts(postRefs []postRef) (posts map[postRef]*post) {
+	posts = map[postRef]*post{}
+	for _, pr := range postRefs {
+		post, err := getPost(pr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error building post: %v", err)
 		}
 
-		posts[filename] = post
+		posts[pr] = post
 	}
 	return posts
 }
 
-func getPost(filename string) (*post, error) {
-	info, err := os.Stat(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat file %q: %v", filename, err)
-	}
-
-	name := strings.TrimRight(info.Name(), path.Ext(info.Name()))
-
+func getPost(pr postRef) (*post, error) {
+	filename := pr.name
 	p := &post{
-		Title:     name,
-		Timestamp: info.ModTime(),
+		Title:     filename,
+		Timestamp: pr.date,
 	}
 
 	f, err := os.Open(filename)
