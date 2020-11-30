@@ -52,6 +52,7 @@ body {
 h1,h2,h3,h4   {color: #000;}
 a {color: #000;}
 a:visited {color: #888;}
+img {max-width: 800px;}
 </style>
 </head>
 <body>
