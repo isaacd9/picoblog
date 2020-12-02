@@ -44,7 +44,7 @@ body {
 	margin: 0 auto;
 	padding: 2em 0px;
 	max-width: 800px;
-	color: #888;
+	color: #444;
 	font-family: -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 	font-size: 14px;
 	line-height: 1.4em;
@@ -53,6 +53,16 @@ h1,h2,h3,h4   {color: #000;}
 a {color: #000;}
 a:visited {color: #888;}
 img {max-width: 800px;}
+code {
+  background-color: #EEE;
+  color: #444;
+  padding: .1em;
+}
+pre {
+  background-color: #EEE;
+  color: #444;
+  padding: 1em;
+}
 </style>
 </head>
 <body>
