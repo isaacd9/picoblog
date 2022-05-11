@@ -63,10 +63,22 @@ pre {
   color: #444;
   padding: 1em;
 }
+ul.toc {
+	padding: 0;
+	list-style-type: none;
+}
+ul.toc li {
+	margin: 0;
+}
 </style>
 </head>
 <body>
 <h4 style="padding-bottom: 2em">{{ .Title }}</h4>
+<ul class="toc">
+{{ range .Posts }}
+	<li><a href="#{{ .Title }}">{{ .Title }}<a> {{ .Timestamp.Format "1/2/2006" }}</li>
+{{ end }}
+</ul>
 {{ range .Posts }}
   <hr style="margin: 2em 0" />
   <div>
