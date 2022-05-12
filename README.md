@@ -1,5 +1,7 @@
 # Picoblog
 
+Read more at [blog.isaac.diamonds](https://blog.isaac.diamonds).
+
 Picoblog is a minimal static blog creator. It's heavily inspired by
 [picofeed](https://github.com/seenaburns/picofeed) and usees the same styling.
 It looks nice, it's dead simple to use, and it gets out of your way. What's not
